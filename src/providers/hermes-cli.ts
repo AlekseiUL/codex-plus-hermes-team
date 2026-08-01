@@ -2,6 +2,33 @@ import type { BridgeConfig, TeamAgent, AskAgentInput, AskAgentResult, SideEffect
 import { runCommand } from "../command.js";
 import { describeSideEffectPolicy, resolveSideEffectPolicy } from "../policy.js";
 import { getConfiguredAgent } from "../registry.js";
+import { DatabaseSync } from "node:sqlite";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+function latestActiveSessionId(): string | null {
+  // Resolve the most recently active, still-open Hermes session from
+  // HERMES_HOME/runtime-data/state.db so one-shots answer with real
+  // conversation context via `--resume <id>` (same behavior as the
+  // Athena /hermes/ask backend). Read-only; session is never written.
+  const home = process.env.HERMES_HOME || join(homedir(), ".hermes");
+  const dbPath = join(home, "runtime-data", "state.db");
+  try {
+    const db = new DatabaseSync(dbPath, { readOnly: true });
+    try {
+      const row = db
+        .prepare(
+          "SELECT id FROM sessions WHERE ended_at IS NULL AND archived = 0 ORDER BY started_at DESC LIMIT 1"
+        )
+        .get() as { id?: string } | undefined;
+      return row?.id ?? null;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
 
 type ProfileListRow = {
   profile: string;
@@ -80,7 +107,10 @@ export class HermesCliProvider {
       // to a provider with no payment method (e.g. Zen gateway) and the
       // oneshot fails with 401.
       ...(this.config.hermes.model ? ["--model", this.config.hermes.model] : []),
-      ...(this.config.hermes.provider ? ["--provider", this.config.hermes.provider] : [])
+      ...(this.config.hermes.provider ? ["--provider", this.config.hermes.provider] : []),
+      // Resume the caller's live Hermes session so the one-shot answers
+      // with real conversation context, not in a vacuum.
+      ...(latestActiveSessionId() ? ["--resume", latestActiveSessionId()!] : [])
     ];
 
     const result = await runCommand(this.config.hermes.command, args, {
