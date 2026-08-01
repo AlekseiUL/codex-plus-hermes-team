@@ -31,7 +31,9 @@ export const BridgeConfigSchema = z.object({
       profileFlag: z.string().default("--profile"),
       defaultCwd: z.string().optional(),
       timeoutMs: z.number().int().positive().default(600_000),
-      defaultToolsets: z.array(z.string()).default([])
+      defaultToolsets: z.array(z.string()).default([]),
+      model: z.string().optional(),
+      provider: z.string().optional()
     })
     .default({
       command: "hermes",

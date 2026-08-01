@@ -72,7 +72,15 @@ export class HermesCliProvider {
       input.profile,
       ...(toolsets.length > 0 ? ["--toolsets", toolsets.join(",")] : []),
       "--oneshot",
-      prompt
+      prompt,
+      // Pin model/provider when configured. Order matters: the prompt
+      // must immediately follow --oneshot (Hermes CLI parses it as a
+      // value-taking option). Without a pin, a profile without an
+      // explicit model falls back to a recommended model that may route
+      // to a provider with no payment method (e.g. Zen gateway) and the
+      // oneshot fails with 401.
+      ...(this.config.hermes.model ? ["--model", this.config.hermes.model] : []),
+      ...(this.config.hermes.provider ? ["--provider", this.config.hermes.provider] : [])
     ];
 
     const result = await runCommand(this.config.hermes.command, args, {
