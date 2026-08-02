@@ -11,10 +11,21 @@ export function runCommand(
   } = {}
 ): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
+    // Hermes oneshot only talks to api.deepseek.com (and localhost).
+    // The host env may carry http_proxy (e.g. Clash) which Python's
+    // httpx picks up via trust_env — when the proxy is down the
+    // one-shot hangs/backs off. Pin NO_PROXY so DeepSeek + localhost
+    // stay direct while the proxy remains available as fallback.
+    const childEnv = {
+      ...process.env,
+      ...(options.env ?? {}),
+      NO_PROXY: "api.deepseek.com,127.0.0.1,localhost",
+      no_proxy: "api.deepseek.com,127.0.0.1,localhost",
+    };
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: { ...process.env, ...options.env },
-      stdio: ["ignore", "pipe", "pipe"]
+      env: childEnv,
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
     let stdout = "";
