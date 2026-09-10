@@ -87,6 +87,12 @@ Requirements:
 - at least one Hermes profile;
 - an MCP-capable client.
 
+> **Windows note**: `hermes` is often not on `PATH` (typical installs live in
+> `<home>/runtime-data/hermes-agent/.venv/Scripts/hermes.exe` or the desktop
+> runtime's `Scripts/hermes.cmd`). Point `team.yaml` at the absolute path
+> (forward slashes), e.g. `command: "D:/tools/hermes-agent/.venv/Scripts/hermes.exe"` —
+> `hermes_team_health` will report the CLI as missing otherwise.
+
 ## Configure
 
 Create a starter config:
