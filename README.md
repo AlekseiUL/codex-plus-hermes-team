@@ -82,7 +82,7 @@ npm install -g .
 
 Requirements:
 
-- Node.js 20 or newer;
+- Node.js 24 LTS;
 - a local `hermes` command;
 - at least one Hermes profile;
 - an MCP-capable client.
